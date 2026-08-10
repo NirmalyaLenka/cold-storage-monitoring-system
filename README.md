@@ -1,4 +1,4 @@
-# 
+# cold storage monitoring system
 
 Reads temperature and humidity from four sensors on an ESP32 and streams
 the readings over Bluetooth Serial (SPP) so they can be viewed in any
