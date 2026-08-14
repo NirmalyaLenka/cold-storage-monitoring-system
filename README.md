@@ -70,3 +70,6 @@ Edit the `#define` block at the top of the sketch to change:
 ## License
 
 MIT, see LICENSE.
+## IT is helpfull in various sectors like the vesitable truck food storage we can build a portable version by adding a lipo battery since lipo battery have a headroom of working in -30 degree selsious.
+it can be used in food delhivery 
+and in various sectors 
