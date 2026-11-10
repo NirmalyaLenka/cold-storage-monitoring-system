@@ -77,6 +77,26 @@ and in various sectors
 
 ---
 
+## Skills & technologies
+
+`Arduino/C++`
+
+
+## Repository structure
+
+Key files and folders (not exhaustive):
+
+- `LICENSE`
+- `README.md`
+- `download`
+- `esp32_triple_temp_monitor.ino`
+
+
+## How it works
+
+The main firmware sketch is `esp32_triple_temp_monitor.ino`. Open it in Arduino IDE, verify the board, pin mapping and library requirements, then compile and upload. Test hardware behaviour on the real circuit before relying on it.
+
+
 ## Maintenance & Audit
 
 - **Audit date:** 10 November 2026
