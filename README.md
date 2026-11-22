@@ -1,101 +1,111 @@
-# cold storage monitoring system
+# ESP32 Cold-Storage Temperature and Humidity Monitor
 
-Reads temperature and humidity from four sensors on an ESP32 and streams
-the readings over Bluetooth Serial (SPP) so they can be viewed in any
-Bluetooth serial terminal app.
+An ESP32 prototype that reads one DHT22 temperature/humidity sensor and three DS18B20 temperature probes, then streams the readings over Bluetooth Classic Serial Port Profile (SPP). The same readings are printed to the USB serial console for setup and troubleshooting.
 
-Sensors:
-- 1x DHT22 (temperature + humidity/moisture)
-- 3x DS18B20 (temperature only, each on its own dedicated OneWire pin)
+> **Prototype status:** This repository provides sensor monitoring only. It is not a validated cold-chain logger or safety alarm, and it does not control refrigeration, store readings to a file, or send threshold alerts.
 
-Total: 4 temperature readings (1 from DHT22 + 3 from DS18B20) plus
-1 humidity/moisture reading (from DHT22).
+## Features
 
-## Hardware
+- Four temperature values: one from the DHT22 and one from each of three DS18B20 probes.
+- One relative-humidity value from the DHT22.
+- Separate OneWire data pins for the three DS18B20 sensors.
+- Bluetooth SPP output under the device name `ESP32_TempMonitor`.
+- USB serial diagnostics at 115200 baud.
+- A configurable 2-second sampling interval and sensor pin definitions near the top of the sketch.
 
-| Signal          | ESP32 Pin | Notes                                  |
-|------------------|-----------|-----------------------------------------|
-| DHT22 DATA       | GPIO4     | 10k pull-up to 3.3V if module lacks one |
-| DS18B20_1 DATA   | GPIO5     | 4.7k pull-up to 3.3V                    |
-| DS18B20_2 DATA   | GPIO18    | 4.7k pull-up to 3.3V                    |
-| DS18B20_3 DATA   | GPIO19    | 4.7k pull-up to 3.3V                    |
-| All VCC          | 3.3V      |                                          |
-| All GND          | GND       |                                          |
+## Hardware and wiring
 
-Each DS18B20 is wired on its own dedicated OneWire pin, so no address
-lookup or bus-sharing logic is needed — each sensor is read directly from
-its own bus.
+Use an **original ESP32-WROOM-32 / ESP32 DevKit board with Bluetooth Classic support**. Not every ESP32-family board supports Bluetooth SPP.
 
-## Libraries
+| Signal | ESP32 connection | Notes |
+|---|---|---|
+| DHT22 DATA | GPIO4 | Add a 10 kΩ pull-up to 3.3 V if the sensor module does not already include one |
+| DS18B20 #1 DATA | GPIO5 | 4.7 kΩ pull-up to 3.3 V |
+| DS18B20 #2 DATA | GPIO18 | 4.7 kΩ pull-up to 3.3 V |
+| DS18B20 #3 DATA | GPIO19 | 4.7 kΩ pull-up to 3.3 V |
+| Sensor VCC | 3.3 V | Confirm the breakout/probe wiring before powering |
+| Sensor GND | ESP32 GND | Common ground |
 
-Install via Arduino IDE Library Manager:
-- DHT sensor library (Adafruit)
-- Adafruit Unified Sensor
-- OneWire
-- DallasTemperature
+Each DS18B20 has its own OneWire bus in this sketch. Do not combine their data lines unless you also change the firmware.
 
-BluetoothSerial is bundled with the ESP32 Arduino core, no separate install
-needed.
+## Prerequisites
 
-## Build and flash
+- Arduino IDE with the Espressif ESP32 board package installed.
+- An ESP32 board selected that supports Bluetooth Classic SPP.
+- Arduino libraries installed through Library Manager:
+  - **DHT sensor library** by Adafruit
+  - **Adafruit Unified Sensor**
+  - **OneWire**
+  - **DallasTemperature**
 
-1. Open `src/esp32_triple_temp_monitor.ino` in Arduino IDE.
-2. Select an ESP32 board under Tools > Board.
-3. Select the correct COM port.
-4. Upload.
+`BluetoothSerial` is provided by the ESP32 Arduino core; it is not a separate Library Manager dependency.
 
-## Reading the data
+## Build and upload
 
-1. On your phone or PC, pair with Bluetooth device `ESP32_TempMonitor`.
-2. Open a Bluetooth serial terminal app (e.g. Serial Bluetooth Terminal on
-   Android, or a PC terminal over the paired virtual COM port).
-3. Connect at any baud rate — SPP ignores baud, framing is handled by the
-   Bluetooth stack.
-4. Readings print every 2 seconds in the form:
+1. Connect the ESP32 over USB.
+2. Open the root-level sketch **[`esp32_triple_temp_monitor.ino`](esp32_triple_temp_monitor.ino)**. There is no `src/` directory in this repository.
+3. In Arduino IDE, select the appropriate ESP32 board and its serial port.
+4. Install the libraries listed above, if not already installed.
+5. Compile and upload the sketch.
+6. Open **Tools → Serial Monitor** at **115200 baud**. Startup output reports the Bluetooth name and whether each DS18B20 bus was detected.
 
-```
+Before connecting sensors, verify the pinout of each module and avoid shorting 3.3 V to ground.
+
+## Read the measurements
+
+1. Pair a phone or computer with **`ESP32_TempMonitor`** using a Bluetooth Classic serial terminal.
+2. Connect to the paired serial service. The Bluetooth SPP link does not use the terminal's baud-rate setting in the same way as a physical UART.
+3. Readings are emitted about every two seconds. Example format:
+
+```text
 DHT22: 26.4 C, 58.2 %RH | DS18B20_1: 26.10 C | DS18B20_2: 25.95 C | DS18B20_3: 26.02 C
 ```
 
-Readings are also mirrored to the USB serial console at 115200 baud for
-debugging without Bluetooth.
+The numbers above are an illustration of the output format, not a measured result from this repository. USB serial prints the same line.
 
 ## Configuration
 
-Edit the `#define` block at the top of the sketch to change:
-- `DHTPIN` / `ONEWIRE_PIN_1` / `ONEWIRE_PIN_2` / `ONEWIRE_PIN_3` — GPIO assignments
-- `BT_DEVICE_NAME` — Bluetooth device name shown when pairing
-- `SAMPLE_INTERVAL_MS` — time between readings
+Edit the definitions near the top of `esp32_triple_temp_monitor.ino`:
+
+- `DHTPIN` and `DHTTYPE` — DHT sensor connection/type.
+- `ONEWIRE_PIN_1`, `ONEWIRE_PIN_2`, `ONEWIRE_PIN_3` — individual DS18B20 data pins.
+- `BT_DEVICE_NAME` — advertised Bluetooth device name.
+- `SAMPLE_INTERVAL_MS` — interval between readings.
+
+Changing pin definitions requires updating the physical wiring to match.
+
+## Troubleshooting
+
+| Symptom | Checks |
+|---|---|
+| Bluetooth device does not appear | Confirm the board supports Bluetooth Classic, the upload succeeded, and the sketch started without errors |
+| A DS18B20 reports a read error | Check its dedicated DATA pin, ground, power, and 4.7 kΩ pull-up; restart after correcting the wiring |
+| DHT22 reports a read error | Check GPIO4, sensor power/ground, and the module's pull-up |
+| Serial output is unreadable | Set the USB Serial Monitor to 115200 baud |
+| Readings appear plausible but inaccurate | Compare sensors with a suitable reference; this sketch does not implement a calibration routine |
+
+## Known limitations and safe use
+
+- No data logging, timestamps, dashboard, refrigeration control, or threshold alarm is implemented.
+- Sensor detection and readings are not a substitute for periodic calibration or independent monitoring.
+- This project has not been validated for regulated food, medicine, or other cold-chain use. Validate the complete sensor placement, measurement accuracy, failure response, and alarm system before relying on it.
+- Portable battery operation is not implemented. Do not assume a Li-ion/LiPo cell is safe to charge or operate at a claimed sub-zero temperature; follow the exact cell manufacturer's operating and charging limits and provide appropriate protection and regulation.
+- The root-level file named `download` contains ignore-pattern text, not a download script. Because it is not named `.gitignore`, Git will not treat it as the repository's standard ignore file.
+
+## Repository files
+
+| Path | Purpose |
+|---|---|
+| [`esp32_triple_temp_monitor.ino`](esp32_triple_temp_monitor.ino) | Main ESP32 sketch |
+| [`README.md`](README.md) | Setup, wiring, and limitations |
+| [`LICENSE`](LICENSE) | MIT license text |
+| `download` | Text file containing ignore-pattern lines |
 
 ## License
 
-MIT, see LICENSE.
-## IT is helpfull in various sectors like the vesitable truck food storage we can build a portable version by adding a lipo battery since lipo battery have a headroom of working in -30 degree selsious.
-it can be used in food delhivery 
-and in various sectors 
-
+MIT; see [`LICENSE`](LICENSE).
 
 ---
-
-## Skills & technologies
-
-`Arduino/C++`
-
-
-## Repository structure
-
-Key files and folders (not exhaustive):
-
-- `LICENSE`
-- `README.md`
-- `download`
-- `esp32_triple_temp_monitor.ino`
-
-
-## How it works
-
-The main firmware sketch is `esp32_triple_temp_monitor.ino`. Open it in Arduino IDE, verify the board, pin mapping and library requirements, then compile and upload. Test hardware behaviour on the real circuit before relying on it.
-
 
 ## Maintenance & Audit
 
